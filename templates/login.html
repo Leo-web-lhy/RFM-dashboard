@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · RFM 客户价值分析大屏</title>
+<style>
+  /* =========================================================
+     登录页 · 墨金终端主题（与大屏同一纪律）
+     炭黑底 + 唯一金色强调（#C9A227）；细线直角面板；
+     无辉光、无渐变按钮；通道品牌色仅用于图标点缀
+     ========================================================= */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden;
+    background: #0B0D10; color: #E7E4DC;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; }
+
+  .wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+
+  .panel { width: 880px; height: 520px; display: flex;
+    background: #12151A; border: 1px solid #2C333C; border-top: 2px solid #C9A227;
+    box-shadow: 0 18px 60px rgba(0,0,0,.55); }
+
+  /* ---------- 左侧品牌区 ---------- */
+  .brand { width: 360px; flex: none; padding: 44px 36px; display: flex; flex-direction: column;
+    background: #0F1216; border-right: 1px solid #262C34; }
+  .brand .logo { width: 44px; height: 44px; line-height: 42px; text-align: center;
+    font-size: 19px; font-weight: 700; color: #C9A227;
+    border: 1px solid #6B5A24; border-radius: 4px; font-family: "Consolas", monospace; }
+  .brand h1 { margin-top: 26px; font-size: 24px; font-weight: 600; letter-spacing: 4px; color: #EDEAE2; }
+  .brand h1 em { font-style: normal; color: #C9A227; }
+  .brand .en { margin-top: 8px; font-size: 11px; letter-spacing: 2px; color: #6A7280;
+    text-transform: uppercase; font-family: "Consolas", monospace; }
+  .brand .desc { margin-top: 30px; font-size: 12.5px; line-height: 2; color: #8E96A0; }
+  .brand .desc b { color: #C9C4B8; font-weight: 600; }
+  .stats { margin-top: auto; }
+  .stats .row { display: flex; justify-content: space-between; padding: 9px 0;
+    border-top: 1px solid #22282F; font-size: 11.5px; color: #6A7280; letter-spacing: .5px; }
+  .stats .row b { color: #C9A227; font-family: "Consolas", monospace; font-weight: 600; font-size: 13px; }
+
+  /* ---------- 右侧登录区 ---------- */
+  .login { flex: 1; padding: 44px 48px; display: flex; flex-direction: column; }
+  .login h2 { font-size: 17px; font-weight: 600; letter-spacing: 2px; color: #EDEAE2; }
+  .login h2::before { content: "▮ "; color: #C9A227; }
+  .login .tip { margin-top: 6px; font-size: 11.5px; color: #6A7280; letter-spacing: .4px; }
+
+  /* 通道切换 */
+  .tabs { margin-top: 26px; display: flex; gap: 10px; }
+  .tab { flex: 1; height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: #161A20; border: 1px solid #2C333C; cursor: pointer;
+    font-size: 13px; color: #8E96A0; letter-spacing: 1px;
+    transition: border-color .2s, color .2s, background .2s; user-select: none; }
+  .tab .ico { width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 3px;
+    font-size: 11px; font-weight: 700; color: #0B0D10; background: #3A424C; }
+  .tab:hover { border-color: #45505C; color: #C9C4B8; }
+  .tab.on { border-color: #C9A227; color: #EDEAE2; background: #1B180F; }
+  .tab.on .ico { background: var(--brand, #C9A227); }
+
+  /* 二维码区 */
+  .qr-area { margin-top: 26px; display: flex; flex-direction: column; align-items: center; }
+  .qr-box { position: relative; width: 196px; height: 196px; padding: 10px;
+    background: #F2F0EA; border: 1px solid #2C333C; }
+  .qr-box canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  .qr-mask { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center;
+    justify-content: center; gap: 10px; background: rgba(11,13,16,.9); font-size: 13px; letter-spacing: 1px; }
+  .qr-mask.show { display: flex; }
+  .qr-mask .ok { width: 44px; height: 44px; line-height: 44px; text-align: center; border-radius: 50%;
+    background: #1E2B22; color: #57A574; border: 1px solid #2E5540; font-size: 20px; }
+  .qr-mask .bad { color: #D9903F; }
+  .qr-mask .refresh { padding: 6px 16px; font-size: 12px; color: #C9A227; letter-spacing: 1px;
+    border: 1px solid #6B5A24; background: #1B180F; cursor: pointer; font-family: inherit; }
+  .qr-mask .refresh:hover { background: #26210F; }
+  .qr-state { margin-top: 14px; font-size: 12.5px; color: #8E96A0; letter-spacing: .5px; }
+  .qr-state b { color: #C9A227; font-weight: 600; }
+
+  .actions { margin-top: 22px; display: flex; gap: 12px; }
+  .btn { flex: 1; height: 42px; font-size: 13.5px; letter-spacing: 2px; font-family: inherit;
+    border: 1px solid #2C333C; background: #161A20; color: #C9C4B8; cursor: pointer;
+    transition: border-color .2s, background .2s, color .2s; }
+  .btn:hover { border-color: #45505C; color: #EDEAE2; }
+  .btn.primary { border-color: #6B5A24; background: #1B180F; color: #E3C15F; }
+  .btn.primary:hover { background: #26210F; border-color: #C9A227; }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+  .foot { margin-top: auto; padding-top: 14px; border-top: 1px solid #22282F;
+    font-size: 10.5px; color: #5C6470; line-height: 1.9; letter-spacing: .3px; }
+  .foot b { color: #8E96A0; font-weight: 600; }
+
+  .err { margin-top: 12px; min-height: 16px; font-size: 12px; color: #CF5B52; letter-spacing: .5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <!-- 左：品牌 -->
+    <div class="brand">
+      <div class="logo">RFM</div>
+      <h1>RFM 客户价值<br>分析<em>大屏</em></h1>
+      <div class="en">Customer Value Analytics Terminal</div>
+      <div class="desc">
+        登录后可访问：客群分层总览 / 高价值客户分析<br>
+        沉睡客户唤醒 / 营销产出分析 / 中文问答 /<br>
+        GMV 预测 / What-if 沙盘 / 数据清洗与月报
+      </div>
+      <div class="stats">
+        <div class="row"><span>数据模型</span><b>星型模型 · 6 表</b></div>
+        <div class="row"><span>分析客户</span><b>5,000</b></div>
+        <div class="row"><span>交易明细</span><b>10,263</b></div>
+        <div class="row"><span>会话有效期</span><b id="st-ttl">12h</b></div>
+      </div>
+    </div>
+
+    <!-- 右：登录 -->
+    <div class="login">
+      <h2>扫码登录</h2>
+      <div class="tip">选择办公协同通道，使用手机端 App 扫码即可进入大屏</div>
+
+      <div class="tabs" id="tabs">
+        {%- for ch in channels %}
+        <div class="tab" data-key="{{ ch.key }}" style="--brand:{{ ch.color }}">
+          <span class="ico" style="background:{{ ch.color }}">{{ ch.name[0] }}</span>{{ ch.name }}
+        </div>
+        {%- endfor %}
+      </div>
+
+      <div class="qr-area">
+        <div class="qr-box">
+          <canvas id="qr" width="176" height="176"></canvas>
+          <div class="qr-mask" id="qr-mask">
+            <div class="ok" id="mask-ico">✓</div>
+            <div id="mask-txt">登录成功</div>
+            <button class="refresh" id="btn-refresh" style="display:none">刷新二维码</button>
+          </div>
+        </div>
+        <div class="qr-state" id="qr-state">正在生成二维码…</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btn-scan" disabled>模拟手机扫码确认</button>
+        <button class="btn" id="btn-skip" title="演示模式说明" onclick="toggleDemoNote()">为什么是“模拟”？</button>
+      </div>
+      <div class="err" id="err"></div>
+
+      <div class="foot" id="demo-note" style="display:none">
+        <b>演示模式说明：</b>真实扫码需要登录企业开放平台（飞书开放平台 / 钉钉开放平台 /
+        微信公众平台），创建应用后获得 app_id 与 app_secret，并配置公网回调地址，
+        写入本目录 <b>login_config.json</b> 并将对应通道 mode 改为 "oauth" 即可启用。
+        未配置前使用本地模拟扫码，不经过任何外网，数据不出本机。
+      </div>
+      <div class="foot">
+        本服务仅监听本机回环地址 127.0.0.1 · 登录态默认 <b id="foot-ttl">12 小时</b> ·
+        会话 Cookie HttpOnly + SameSite=Lax
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- 通道与状态（通道卡由服务端渲染，JS 只管交互） ---------------- */
+var CHANNELS = [], cur = null, ticket = null, timer = null, expireAt = 0;
+var $ = function(id){ return document.getElementById(id); };
+window.onerror = function(m){ var e=$("err"); if(e) e.textContent = "JSERR: " + m; };
+window.addEventListener("unhandledrejection", function(ev){
+  var e=$("err"); if(e) e.textContent = "FETCHERR: " + (ev.reason && ev.reason.message || ev.reason);
+});
+
+function init(){
+  // 从服务端渲染的通道卡读取通道列表（不依赖 fetch，降级环境也能显示入口）
+  var nodes = document.querySelectorAll("#tabs .tab");
+  nodes.forEach(function(n){
+    var ico = n.querySelector(".ico");
+    CHANNELS.push({ key: n.getAttribute("data-key"),
+                    name: (n.textContent || "").trim(),
+                    color: ico ? ico.style.background : "#C9A227" });
+  });
+  if (!CHANNELS.length){
+    $("qr-state").textContent = "没有可用登录通道，请检查 login_config.json";
+    return;
+  }
+  // 深链支持：?channel=dingtalk 直达指定通道
+  var want = new URLSearchParams(location.search).get("channel");
+  cur = CHANNELS.filter(function(x){ return x.key === want; })[0] || CHANNELS[0];
+  renderTabs();
+  newQR();
+}
+
+function renderTabs(){
+  var nodes = document.querySelectorAll("#tabs .tab");
+  nodes.forEach(function(n){
+    var key = n.getAttribute("data-key");
+    var on = cur && key === cur.key;
+    n.className = "tab" + (on ? " on" : "");
+    n.onclick = function(){
+      cur = CHANNELS.filter(function(x){ return x.key === key; })[0];
+      renderTabs(); newQR();
+    };
+  });
+}
+
+/* ---------------- 伪二维码（demo）：按 ticket 哈希绘制 25x25 网格 ---------------- */
+function hash31(s, seed){
+  var h = seed >>> 0;
+  for (var i=0;i<s.length;i++){ h = (h*131 + s.charCodeAt(i)) >>> 0; }
+  return h;
+}
+function drawQR(tk){
+  var c = $("qr"), ctx = c.getContext("2d");
+  var N = 25, cell = c.width / N;
+  ctx.fillStyle = "#F2F0EA"; ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle = "#111318";
+  var h1 = hash31(tk, 7919);
+  for (var y=0;y<N;y++) for (var x=0;x<N;x++){
+    var inFinder = (x<8&&y<8)||(x>=N-8&&y<8)||(x<8&&y>=N-8);
+    if (inFinder) continue;
+    h1 = (h1*1103515245 + 12345) >>> 0;
+    if ((h1 >>> 16) % 100 < 46) ctx.fillRect(x*cell, y*cell, cell, cell);
+  }
+  function finder(fx, fy){
+    ctx.fillStyle = "#111318"; ctx.fillRect(fx*cell, fy*cell, 7*cell, 7*cell);
+    ctx.fillStyle = "#F2F0EA"; ctx.fillRect((fx+1)*cell, (fy+1)*cell, 5*cell, 5*cell);
+    ctx.fillStyle = "#111318"; ctx.fillRect((fx+2)*cell, (fy+2)*cell, 3*cell, 3*cell);
+  }
+  finder(1,1); finder(N-8,1); finder(1,N-8);
+  // 中心金色定位点（主题唯一强调色）
+  ctx.fillStyle = "#C9A227"; ctx.fillRect(11*cell, 11*cell, 3*cell, 3*cell);
+}
+
+/* ---------------- 二维码生命周期 ---------------- */
+function newQR(){
+  clearInterval(timer); timer = null;
+  $("err").textContent = ""; $("mask-txt").textContent = "";
+  $("qr-mask").classList.remove("show"); $("btn-refresh").style.display = "none";
+  $("btn-scan").disabled = true;
+  $("qr-state").innerHTML = "正在生成二维码…";
+  fetch("/api/login/qr", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({channel: cur.key})
+  }).then(r=>r.json()).then(function(d){
+    if (!d.ok){ $("err").textContent = d.error || "生成失败"; return; }
+    ticket = d.ticket; expireAt = d.expire;
+    drawQR(ticket);
+    $("qr-state").innerHTML = "使用 <b>" + cur.name + "</b> App 扫一扫（演示二维码）";
+    $("btn-scan").disabled = false;
+    timer = setInterval(poll, 1500);
+  }).catch(function(){ $("err").textContent = "网络异常，请重试"; });
+}
+
+function poll(){
+  if (!ticket) return;
+  if (Date.now()/1000 > expireAt){
+    clearInterval(timer); ticket = null;
+    showMask("?", "二维码已过期", true); $("btn-scan").disabled = true;
+    return;
+  }
+  fetch("/api/login/qr/status?ticket=" + encodeURIComponent(ticket))
+    .then(r=>r.json()).then(function(d){
+      if (!d.ok) return;
+      if (d.status === "confirmed"){
+        clearInterval(timer);
+        $("mask-ico").textContent = "✓";
+        $("mask-ico").style.color = "#57A574";
+        $("mask-txt").textContent = "登录成功，正在进入大屏…";
+        $("qr-mask").classList.add("show");
+        $("btn-refresh").style.display = "none";
+        $("qr-state").innerHTML = "已通过 <b>" + cur.name + "</b> 登录";
+        setTimeout(function(){ location.href = "/"; }, 700);
+      }
+    }).catch(function(){});
+}
+
+function showMask(ico, txt, bad){
+  $("mask-ico").textContent = ico;
+  $("mask-ico").style.color = bad ? "#D9903F" : "#57A574";
+  $("mask-txt").textContent = txt;
+  $("qr-mask").classList.add("show");
+  if (bad) $("btn-refresh").style.display = "";
+}
+
+/* ---------------- 按钮事件 ---------------- */
+$("btn-scan").onclick = function(){
+  if (!ticket) return;
+  this.disabled = true;
+  fetch("/api/login/qr/confirm", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ticket: ticket})
+  }).then(r=>r.json()).then(function(d){
+    if (!d.ok){ $("err").textContent = d.error || "确认失败"; $("btn-scan").disabled = false; }
+  }).catch(function(){ $("err").textContent = "网络异常"; $("btn-scan").disabled = false; });
+};
+$("btn-refresh").onclick = function(){ newQR(); };
+function toggleDemoNote(){
+  var n = $("demo-note"); n.style.display = n.style.display === "none" ? "" : "none";
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# ============ RFM 大屏（公开展示版）.gitignore ============
+# 真实业务数据不入库：data/ 只保留脱敏示例数据（由 gen_sample_data.py 生成）
+# 以下均为运行期产物或敏感文件，不入库。
+
+# Python 运行时缓存
+__pycache__/
+*.pyc
+
+# 真实业务数据与运行产物（保密协议约束 + 本地文件）
+uploads/
+eda_reports/
+报告/
+*.db
+.login_secret
+login_config.json
+
+# 服务日志与临时脚本
+*.log
+_p*.py

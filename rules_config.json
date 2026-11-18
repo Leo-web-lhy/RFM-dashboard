@@ -1,0 +1,122 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "name": "电商 RFM 数据清洗规则配置",
+    "desc": "可配置规则引擎：金额标准化 / 三色分流 / 剔除阈值 / RFM 口径。改此文件即改规则，无需改代码。红线：格式不统一 ≠ 无效数据，黄色(可转换/需确认)永不自动删除。"
+  },
+
+  "thresholds": {
+    "removal_ratio_warn": 0.05,
+    "removal_ratio_warn_msg": "剔除比例超过 5%，请回查清洗规则或人工复核剔除清单，确认是否误删",
+    "extreme_amount": {
+      "method": "p99_multiplier",
+      "p99_multiplier": 10,
+      "iqr_k": 3.0,
+      "flag_only": true,
+      "note": "极端金额仅标记黄色人工复核，永不自动删除（电商长尾明显，慎删）"
+    }
+  },
+
+  "amount": {
+    "units": {
+      "亿元": 100000000, "亿": 100000000,
+      "万元": 10000, "万": 10000,
+      "千元": 1000,
+      "元": 1,
+      "分": 0.01
+    },
+    "currency_symbols": ["¥", "￥", "＄", "$", "€", "£", "RMB", "CNY", "rmb", "cny"],
+    "thousand_separators": [",", "，", " "],
+    "negative_action": "flag_refund",
+    "zero_action": "flag_gift",
+    "negative_note": "金额为负/0 不默认删除：标记退款/赠品，按业务口径处理（RFM 中 M 取净额、F 是否计频次见 rfm 配置）"
+  },
+
+  "customer_id": {
+    "priority": ["member_id", "phone", "anonymous_id"],
+    "aliases": {
+      "member_id": ["memberid", "member_id", "会员id", "会员号", "会员编号", "vipid", "vip"],
+      "phone": ["phone", "mobile", "手机号", "手机", "电话", "手机号码"],
+      "anonymous_id": ["anonymousid", "anonymous_id", "匿名id", "匿名编号", "guestid", "游客id"]
+    },
+    "unattributable_note": "无任何可映射客户标识：标记「无法归属」，不参与 RFM 分群（金额仍计入 GMV）"
+  },
+
+  "dedup": {
+    "enabled": true,
+    "key_aliases": ["orderid", "order_id", "订单号", "订单编号", "订单id", "订单号码"],
+    "keep": "latest",
+    "keep_note": "按订单ID去重：保留最新一条（有日期列时按日期最新，否则按行序最后一条；无订单ID列时跳过本规则）"
+  },
+
+  "test_orders": {
+    "enabled": true,
+    "keywords": ["测试", "test", "demo", "内部", "勿发货", "刷单", "演练", "调试"],
+    "match_fields_aliases": ["备注", "订单备注", "remark", "note", "memo"],
+    "note": "测试单/内部单按关键词剔除，记录行数与影响评估"
+  },
+
+  "refund": {
+    "enabled": true,
+    "status_aliases": ["订单状态", "状态", "status", "orderstatus", "订单状态码"],
+    "refund_keywords": ["退款", "退货", "取消", "已退", "refund", "cancel", "closed", "已关闭"],
+    "note": "退款/取消单按 RFM 口径标记：R 默认不算有效购买、F 是否计频次可配置、M 取净额（见 rfm 配置）"
+  },
+
+  "dates": {
+    "future_tolerance_days": 1,
+    "check_pay_before_order": true,
+    "pay_field_aliases": ["支付时间", "支付日期", "paytime", "paymentdate", "pay_date"],
+    "note": "日期异常（未来日期 / 支付早于下单）标记黄色人工复核，不自动删"
+  },
+
+  "enum_alias": {
+    "enabled": true,
+    "groups": {
+      "渠道": {
+        "field_aliases": ["渠道", "channel", "渠道来源", "销售渠道", "平台"],
+        "map": {
+          "jd": "京东", "jd.com": "京东", "京东商城": "京东", "jingdong": "京东",
+          "tmall": "天猫", "天猫商城": "天猫",
+          "taobao": "淘宝", "淘宝网": "淘宝",
+          "pdd": "拼多多", "pin duo duo": "拼多多",
+          "douyin": "抖音", "抖音商城": "抖音",
+          "offline": "线下", "线下门店": "线下"
+        }
+      },
+      "地区": {
+        "field_aliases": ["地区", "region", "城市", "city", "省份"],
+        "map": {
+          "beijing": "北京", "北京市": "北京",
+          "shanghai": "上海", "上海市": "上海",
+          "guangzhou": "广州", "广州市": "广州",
+          "shenzhen": "深圳", "深圳市": "深圳",
+          "hangzhou": "杭州", "杭州市": "杭州"
+        }
+      }
+    },
+    "note": "枚举大小写/别名映射统一，原始值保留并记录转换日志"
+  },
+
+  "rfm": {
+    "window_days": 180,
+    "refund_counts_in_F": false,
+    "gift_zero_counts_in_F": false,
+    "refund_is_valid_purchase": false,
+    "m_net_amount": true,
+    "unit": "元",
+    "note": "R=最近一次有效购买(退款/取消默认不算，可配置)；F=统计周期内有效订单数(0元赠品默认不计，可配置)；M=净额(支付-退款)；窗口默认180天(避开大促干扰，写入EDA报告)"
+  },
+
+  "logs": {
+    "fields": ["规则名", "字段", "原始值", "标准值", "处理动作", "原因", "影响行数", "时间", "版本"],
+    "actions": {
+      "pass": "直接通过(绿)",
+      "transform": "标准化转换(黄→绿)",
+      "remove": "剔除(红)",
+      "keep_manual": "人工确认保留(黄)",
+      "mark_unparseable": "人工标记无法解析",
+      "rollback": "回滚"
+    }
+  }
+}
